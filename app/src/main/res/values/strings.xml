@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Away Time</string>
+    <string name="widget_title">Away Time</string>
+    <string name="widget_small_name">Away Time Small</string>
+    <string name="widget_large_name">Away Time Summary</string>
+</resources>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_large_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg_dark"
+    android:orientation="vertical"
+    android:padding="18dp">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="AWAY TIME"
+            android:textColor="#8E8E93"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.12" />
+
+        <TextView
+            android:id="@+id/tv_widget_status_dot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="●"
+            android:textColor="#34C759"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Main Active Away Time -->
+    <TextView
+        android:id="@+id/tv_widget_large_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="0m"
+        android:textColor="#FFFFFF"
+        android:textSize="32sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_widget_large_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Phone in use"
+        android:textColor="#A1A1AA"
+        android:textSize="13sp" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="#26262E" />
+
+    <!-- Metrics Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TODAY"
+                android:textColor="#8E8E93"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:id="@+id/tv_widget_today_total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="0m"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LONGEST"
+                android:textColor="#8E8E93"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:id="@+id/tv_widget_longest_break"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="0m"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BREAKS"
+                android:textColor="#8E8E93"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:id="@+id/tv_widget_sessions_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="0"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,6 @@
+{
+  "name": "Away Time",
+  "description": "A positive Digital Wellbeing app that tracks how long you stay away from your phone.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
