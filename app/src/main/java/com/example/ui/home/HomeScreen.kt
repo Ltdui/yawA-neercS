@@ -13,18 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -64,7 +57,7 @@ fun HomeScreen(
         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Elegant Dark Header
+        // Header
         item {
             Row(
                 modifier = Modifier
@@ -101,25 +94,32 @@ fun HomeScreen(
                     )
                 }
 
-                // Test Break Button with minimal pill styling
-                OutlinedButton(
-                    onClick = { viewModel.toggleSimulateAway() },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color(0x14FFFFFF),
-                        contentColor = if (state.isSimulatingAway) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    modifier = Modifier.testTag("simulate_away_button")
+                // Automatic Status Badge
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (state.isAway) Color(0x2234C759) else Color(0x14FFFFFF))
+                        .border(
+                            1.dp,
+                            if (state.isAway) Color(0xFF34C759).copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant,
+                            RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                        .testTag("auto_tracking_status_badge"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        imageVector = if (state.isSimulatingAway) Icons.Default.Stop else Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(if (state.isAway) Color(0xFF34C759) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (state.isSimulatingAway) "End Break" else "Test Break",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        text = if (state.isAway) "AWAY ACTIVE" else "AUTO-TRACKING ON",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (state.isAway) Color(0xFF34C759) else MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 1.0.sp
                     )
                 }
@@ -238,4 +238,3 @@ fun HomeScreen(
         }
     }
 }
-

@@ -55,6 +55,7 @@ class AwayTrackingService : Service() {
             try {
                 val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
                 val isInteractive = powerManager?.isInteractive ?: true
+                TrackingDiagnostics.updateScreenState(isInteractive)
                 val app = applicationContext as? AwayTimeApp ?: return@launch
                 val repository = app.repository
 

@@ -21,56 +21,81 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PowerSettingsNew
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.example.util.UsageAccessUtils
 
-data class OnboardingStep(
+sealed class OnboardingPage(
     val title: String,
     val headline: String,
     val description: String,
     val icon: ImageVector
-)
-
-val onboardingSteps = listOf(
-    OnboardingStep(
+) {
+    object Concept : OnboardingPage(
         title = "THE CONCEPT",
-        headline = "Focus on the time you spend away.",
+        headline = "Track your time away automatically.",
         description = "Traditional wellbeing apps count the hours spent staring at a screen. Away Time celebrates the peaceful hours spent living outside of it.",
         icon = Icons.Outlined.Spa
-    ),
-    OnboardingStep(
-        title = "AUTOMATIC & CALM",
-        headline = "No timers. No friction.",
-        description = "Whenever you put your phone down and lock your screen, Away Time quietly logs your break. When you return, your mindful progress is waiting.",
+    )
+
+    object HowItWorks : OnboardingPage(
+        title = "AUTOMATIC TRACKING",
+        headline = "Screen OFF = Start\nScreen ON = Stop",
+        description = "Away Time starts automatically when your screen turns off and stops when your screen turns on. No timers, no buttons, no friction.",
         icon = Icons.Outlined.PowerSettingsNew
-    ),
-    OnboardingStep(
+    )
+
+    object UsageAccess : OnboardingPage(
+        title = "ACTIVITY VERIFICATION",
+        headline = "Allow Usage Access",
+        description = "To improve activity detection and verify phone state, allow Usage Access. Android's native screen events handle all tracking automatically.",
+        icon = Icons.Outlined.Security
+    )
+
+    object Privacy : OnboardingPage(
         title = "PRIVACY FIRST",
         headline = "100% on-device. Zero cloud.",
-        description = "Your usage data never leaves your device. No user accounts, no telemetry, no battery drain. Pure local simplicity.",
+        description = "Away Time processes your activity locally on your device. No account is required and your history is never uploaded to a server.",
         icon = Icons.Outlined.Lock
     )
+}
+
+val onboardingPages = listOf(
+    OnboardingPage.Concept,
+    OnboardingPage.HowItWorks,
+    OnboardingPage.UsageAccess,
+    OnboardingPage.Privacy
 )
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -79,9 +104,26 @@ fun OnboardingScreen(
     onFinished: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var hasUsageAccess by remember { mutableStateOf(UsageAccessUtils.hasUsageAccessPermission(context)) }
+
+    // Re-check permission on lifecycle resume when returning from system Settings
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasUsageAccess = UsageAccessUtils.hasUsageAccessPermission(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     var currentStepIndex by remember { mutableIntStateOf(0) }
-    val step = onboardingSteps[currentStepIndex]
-    val isLast = currentStepIndex == onboardingSteps.size - 1
+    val step = onboardingPages[currentStepIndex]
+    val isLast = currentStepIndex == onboardingPages.size - 1
 
     Column(
         modifier = modifier
@@ -132,7 +174,7 @@ fun OnboardingScreen(
                 // Minimal geometric icon frame
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
+                        .size(90.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
@@ -142,11 +184,11 @@ fun OnboardingScreen(
                         imageVector = currentStep.icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
                     text = currentStep.title,
@@ -165,15 +207,86 @@ fun OnboardingScreen(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
                     text = currentStep.description,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
-                    lineHeight = 24.sp
+                    lineHeight = 22.sp
                 )
+
+                // Dedicated Usage Access Setup Widget on step 3
+                if (currentStep is OnboardingPage.UsageAccess) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(if (hasUsageAccess) Color(0xFF34C759) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            )
+                            Text(
+                                text = if (hasUsageAccess) "Usage Access: Enabled" else "Usage Access: Not enabled",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (hasUsageAccess) Color(0xFF34C759) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (hasUsageAccess) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF34C759),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Automatic tracking is ready.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "Enable Usage Access to allow Away Time to automatically track your phone activity.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedButton(
+                                onClick = { UsageAccessUtils.openUsageAccessSettings(context) },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.testTag("enable_usage_access_onboarding_button")
+                            ) {
+                                Text(
+                                    text = "Enable Usage Access",
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -189,7 +302,7 @@ fun OnboardingScreen(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                onboardingSteps.indices.forEach { index ->
+                onboardingPages.indices.forEach { index ->
                     val isSelected = index == currentStepIndex
                     Box(
                         modifier = Modifier
@@ -204,7 +317,7 @@ fun OnboardingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             Button(
                 onClick = {

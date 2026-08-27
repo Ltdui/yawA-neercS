@@ -8,6 +8,9 @@ import com.example.data.preferences.UserPreferences
 import com.example.data.preferences.UserPreferencesRepository
 import com.example.data.repository.AwayTimeRepository
 import com.example.service.AwayTrackingService
+import com.example.service.DiagnosticsData
+import com.example.service.TrackingDiagnostics
+import com.example.util.UsageAccessUtils
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -24,6 +27,15 @@ class SettingsViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = UserPreferences()
         )
+
+    val diagnosticsState: StateFlow<DiagnosticsData> = TrackingDiagnostics.state
+
+    fun refreshDiagnostics(context: Context) {
+        val hasPermission = UsageAccessUtils.hasUsageAccessPermission(context)
+        val isInteractive = UsageAccessUtils.isScreenInteractive(context)
+        TrackingDiagnostics.updateUsageAccess(hasPermission)
+        TrackingDiagnostics.updateScreenState(isInteractive)
+    }
 
     fun setThemeMode(mode: String) {
         viewModelScope.launch {

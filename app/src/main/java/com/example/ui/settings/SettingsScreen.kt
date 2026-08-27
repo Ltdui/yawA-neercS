@@ -20,9 +20,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -34,6 +37,8 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,12 +46,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.util.TimeUtils
+import com.example.util.UsageAccessUtils
 
 @Composable
 fun SettingsScreen(
@@ -54,8 +65,26 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val prefs by viewModel.preferencesState.collectAsStateWithLifecycle()
+    val diagnostics by viewModel.diagnosticsState.collectAsStateWithLifecycle()
     var showClearDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshDiagnostics(context)
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshDiagnostics(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LazyColumn(
         modifier = modifier
@@ -80,10 +109,192 @@ fun SettingsScreen(
                     letterSpacing = 2.sp
                 )
                 Text(
-                    text = "Preferences, tracking controls, and privacy",
+                    text = "Automatic tracking, verification, and privacy",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+
+        // Automatic Tracking & Usage Access Card
+        item {
+            SettingsCard(title = "AUTOMATIC TRACKING & ACCESS") {
+                // Background Tracking Switch
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Automatic Screen State Tracking",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Automatically starts when screen turns OFF and stops when screen turns ON.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Switch(
+                        checked = prefs.backgroundTrackingEnabled,
+                        onCheckedChange = { viewModel.setBackgroundTrackingEnabled(context, it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.testTag("background_tracking_switch")
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Usage Access Status Block
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                        .padding(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (diagnostics.isUsageAccessGranted) Color(0xFF34C759)
+                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                    )
+                            )
+                            Text(
+                                text = if (diagnostics.isUsageAccessGranted) "Usage Access: Enabled" else "Usage Access: Not enabled",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (diagnostics.isUsageAccessGranted) Color(0xFF34C759) else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        if (diagnostics.isUsageAccessGranted) {
+                            Icon(
+                                imageVector = Icons.Outlined.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF34C759),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    if (diagnostics.isUsageAccessGranted) {
+                        Text(
+                            text = "Automatic tracking is fully enabled and active.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            text = "Enable Usage Access to allow Away Time to automatically verify phone activity.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedButton(
+                            onClick = { UsageAccessUtils.openUsageAccessSettings(context) },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.testTag("enable_usage_access_settings_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Security,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Enable Usage Access", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tracking Filter Options
+        item {
+            SettingsCard(title = "TRACKING PREFERENCES") {
+                Text(
+                    text = "Minimum Session Duration",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Sessions shorter than this threshold will be excluded from mindful totals.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(
+                        60 to "1 min",
+                        120 to "2 min",
+                        300 to "5 min",
+                        600 to "10 min"
+                    ).forEach { (seconds, label) ->
+                        DurationOptionChip(
+                            label = label,
+                            isSelected = prefs.minSessionDurationSeconds == seconds,
+                            onClick = { viewModel.setMinDuration(seconds) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Include short breaks toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Include Short Breaks",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Count brief away moments in daily total analytics",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = prefs.includeShortBreaks,
+                        onCheckedChange = { viewModel.setIncludeShortBreaks(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.testTag("include_short_breaks_switch")
+                    )
+                }
             }
         }
 
@@ -125,102 +336,49 @@ fun SettingsScreen(
             }
         }
 
-        // Tracking Options
+        // Diagnostics & Live State
         item {
-            SettingsCard(title = "TRACKING PREFERENCES") {
-                // Minimum duration
-                Text(
-                    text = "Minimum Session Duration",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Sessions shorter than this will be ignored if filtering is enabled.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-
+            SettingsCard(title = "DIAGNOSTICS & SYSTEM STATE") {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    listOf(
-                        10 to "10s",
-                        30 to "30s",
-                        60 to "1 min",
-                        120 to "2 min",
-                        300 to "5 min"
-                    ).forEach { (seconds, label) ->
-                        DurationOptionChip(
-                            label = label,
-                            isSelected = prefs.minSessionDurationSeconds == seconds,
-                            onClick = { viewModel.setMinDuration(seconds) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Include short breaks toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Include Short Breaks",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Count brief away moments under minimum duration in totals",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = prefs.includeShortBreaks,
-                        onCheckedChange = { viewModel.setIncludeShortBreaks(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary
-                        ),
-                        modifier = Modifier.testTag("include_short_breaks_switch")
+                    Icon(
+                        imageVector = Icons.Outlined.BugReport,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Real-time Event Telemetry",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Background Tracking toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Background Screen Detection",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Detects screen lock / unlock events reliably when app is in background",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = prefs.backgroundTrackingEnabled,
-                        onCheckedChange = { viewModel.setBackgroundTrackingEnabled(context, it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary
-                        ),
-                        modifier = Modifier.testTag("background_tracking_switch")
+                DiagnosticRow(
+                    label = "Screen State",
+                    value = if (diagnostics.isScreenOn) "SCREEN ON (In-Use)" else "SCREEN OFF (Away)"
+                )
+                DiagnosticRow(
+                    label = "Usage Access",
+                    value = if (diagnostics.isUsageAccessGranted) "GRANTED" else "NOT GRANTED"
+                )
+                DiagnosticRow(
+                    label = "Active Away Session",
+                    value = if (diagnostics.hasActiveSession) "ACTIVE" else "INACTIVE"
+                )
+                DiagnosticRow(
+                    label = "Last Received Event",
+                    value = diagnostics.lastReceivedEvent
+                )
+                if (diagnostics.lastCompletedSessionDuration != null) {
+                    DiagnosticRow(
+                        label = "Last Completed Break",
+                        value = TimeUtils.formatDuration(diagnostics.lastCompletedSessionDuration ?: 0L)
                     )
                 }
             }
@@ -228,7 +386,7 @@ fun SettingsScreen(
 
         // Privacy Section
         item {
-            SettingsCard(title = "PRIVACY & SECURITY") {
+            SettingsCard(title = "PRIVACY FIRST") {
                 Row(
                     verticalAlignment = Alignment.Top
                 ) {
@@ -241,14 +399,14 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Your Away Time data stays on this device.",
+                            text = "100% on-device. Zero cloud.",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Away Time does not send usage information to any server, uses zero analytics, requires no cloud accounts, and operates completely offline.",
+                            text = "Away Time processes your activity locally on your device. No account is required and your history is never uploaded to a server.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 18.sp
@@ -262,7 +420,7 @@ fun SettingsScreen(
         item {
             SettingsCard(title = "DATA MANAGEMENT") {
                 Text(
-                    text = "Add Test Data (for verification)",
+                    text = "Add Test Data (for quick verification)",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -304,42 +462,6 @@ fun SettingsScreen(
                     Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("Clear All Recorded Data", style = MaterialTheme.typography.labelMedium)
-                }
-            }
-        }
-
-        // About & Platform info
-        item {
-            SettingsCard(title = "ABOUT") {
-                Row(verticalAlignment = Alignment.Top) {
-                    Icon(
-                        imageVector = Icons.Outlined.Info,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Away Time v1.0.0",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Away Time is inspired by positive digital wellbeing: focusing on the peaceful moments spent living in the real world when your screen is off.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 18.sp
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Tracking relies on standard Android screen state broadcast events (ACTION_SCREEN_OFF / USER_PRESENT) to measure device inactivity without draining battery.",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
                 }
             }
         }
@@ -391,6 +513,32 @@ private fun SettingsCard(
         )
         Spacer(modifier = Modifier.height(14.dp))
         content()
+    }
+}
+
+@Composable
+private fun DiagnosticRow(
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
