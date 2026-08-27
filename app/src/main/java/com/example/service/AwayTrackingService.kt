@@ -63,6 +63,7 @@ class AwayTrackingService : Service() {
                     Log.d(TAG, "Initial check: Device screen is OFF -> Start session")
                     repository.startAwaySession()
                 }
+                com.example.widget.AwayTimeWidgetUpdater.updateAllWidgets(applicationContext)
             } catch (e: Exception) {
                 Log.e(TAG, "Error during initial screen state check", e)
             }

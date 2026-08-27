@@ -51,6 +51,7 @@
             android:label="@string/widget_small_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.action.REFRESH_SMALL_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -64,6 +65,7 @@
             android:label="@string/widget_large_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.action.REFRESH_LARGE_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

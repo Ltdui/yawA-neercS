@@ -23,7 +23,7 @@ class AwayTimeApp : Application() {
     }
 
     val repository: AwayTimeRepository by lazy {
-        AwayTimeRepository(database.awaySessionDao(), preferencesRepository)
+        AwayTimeRepository(database.awaySessionDao(), preferencesRepository, this)
     }
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -31,6 +31,8 @@ class AwayTimeApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Log.d("AwayTimeApp", "AwayTimeApp initialized")
+
+        com.example.widget.AwayTimeWidgetUpdater.updateAllWidgets(this)
 
         applicationScope.launch {
             try {

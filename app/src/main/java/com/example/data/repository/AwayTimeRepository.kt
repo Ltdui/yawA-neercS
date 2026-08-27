@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import android.content.Context
 import com.example.data.local.AwaySessionDao
 import com.example.data.model.AllTimeStats
 import com.example.data.model.AwaySession
@@ -7,6 +8,7 @@ import com.example.data.model.DaySummary
 import com.example.data.model.WeeklyStats
 import com.example.data.preferences.UserPreferencesRepository
 import com.example.util.TimeUtils
+import com.example.widget.AwayTimeWidgetUpdater
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -17,7 +19,8 @@ import java.util.Calendar
 
 class AwayTimeRepository(
     private val awaySessionDao: AwaySessionDao,
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val context: Context? = null
 ) {
 
     val activeSessionFlow: Flow<AwaySession?> = awaySessionDao.observeActiveSession()
@@ -87,6 +90,7 @@ class AwayTimeRepository(
     suspend fun startAwaySession(timestamp: Long = System.currentTimeMillis()): Long = withContext(Dispatchers.IO) {
         val currentActive = awaySessionDao.getActiveSession()
         if (currentActive != null) {
+            context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
             return@withContext currentActive.id
         }
         val dateKey = TimeUtils.getDateKey(timestamp)
@@ -98,11 +102,16 @@ class AwayTimeRepository(
             isActive = true,
             createdAt = timestamp
         )
-        awaySessionDao.insertSession(session)
+        val id = awaySessionDao.insertSession(session)
+        context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
+        id
     }
 
     suspend fun endAwaySession(timestamp: Long = System.currentTimeMillis()) = withContext(Dispatchers.IO) {
-        val active = awaySessionDao.getActiveSession() ?: return@withContext
+        val active = awaySessionDao.getActiveSession() ?: run {
+            context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
+            return@withContext
+        }
         val start = active.startTime
         val end = maxOf(start, timestamp)
         val totalDuration = end - start
@@ -110,6 +119,7 @@ class AwayTimeRepository(
         if (totalDuration < 1000L) {
             // Less than 1 second, discard
             awaySessionDao.deleteSession(active)
+            context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
             return@withContext
         }
 
@@ -128,6 +138,7 @@ class AwayTimeRepository(
             // Crossed midnight: split across days for clean statistics
             handleCrossMidnightSession(active, start, end)
         }
+        context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
     }
 
     private suspend fun handleCrossMidnightSession(active: AwaySession, start: Long, end: Long) {
@@ -173,25 +184,32 @@ class AwayTimeRepository(
     }
 
     suspend fun recoverFromReboot(bootTimestamp: Long = System.currentTimeMillis()) = withContext(Dispatchers.IO) {
-        val active = awaySessionDao.getActiveSession() ?: return@withContext
+        val active = awaySessionDao.getActiveSession() ?: run {
+            context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
+            return@withContext
+        }
         // If active session was left open before reboot, close it at reboot time
         val duration = maxOf(0L, bootTimestamp - active.startTime)
         // If it was abnormally long (e.g. days), limit reasonably
         val maxReasonable = 24L * 60 * 60 * 1000 // 24 hours
         val finalEnd = if (duration > maxReasonable) active.startTime + maxReasonable else bootTimestamp
         endAwaySession(finalEnd)
+        context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
     }
 
     suspend fun deleteSession(session: AwaySession) = withContext(Dispatchers.IO) {
         awaySessionDao.deleteSession(session)
+        context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
     }
 
     suspend fun deleteSessionById(id: Long) = withContext(Dispatchers.IO) {
         awaySessionDao.deleteSessionById(id)
+        context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
     }
 
     suspend fun clearAllData() = withContext(Dispatchers.IO) {
         awaySessionDao.deleteAllSessions()
+        context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
     }
 
     suspend fun insertTestSession(startTime: Long, endTime: Long) = withContext(Dispatchers.IO) {
@@ -205,11 +223,19 @@ class AwayTimeRepository(
             isActive = false,
             createdAt = System.currentTimeMillis()
         )
-        awaySessionDao.insertSession(session)
+        val id = awaySessionDao.insertSession(session)
+        context?.let { AwayTimeWidgetUpdater.updateAllWidgets(it) }
+        id
     }
 
     suspend fun getActiveSessionSync(): AwaySession? = withContext(Dispatchers.IO) {
         awaySessionDao.getActiveSession()
+    }
+
+    suspend fun getLastCompletedSessionSync(): AwaySession? = withContext(Dispatchers.IO) {
+        val todayKey = TimeUtils.getCurrentDateKey()
+        val sessions = awaySessionDao.getSessionsForDateSync(todayKey)
+        sessions.firstOrNull { !it.isActive } ?: awaySessionDao.getAllSessionsSync().firstOrNull { !it.isActive }
     }
 
     suspend fun getTodayTotalAwayMillisSync(): Long = withContext(Dispatchers.IO) {
@@ -217,7 +243,12 @@ class AwayTimeRepository(
         val sessions = awaySessionDao.getSessionsForDateSync(todayKey)
         val completedSum = sessions.sumOf { it.durationMillis }
         val active = awaySessionDao.getActiveSession()
-        val activeSum = if (active != null) maxOf(0L, System.currentTimeMillis() - active.startTime) else 0L
+        val activeSum = if (active != null) {
+            val now = System.currentTimeMillis()
+            val startOfToday = TimeUtils.getStartOfTodayMillis()
+            val effectiveStart = maxOf(active.startTime, startOfToday)
+            maxOf(0L, now - effectiveStart)
+        } else 0L
         completedSum + activeSum
     }
 

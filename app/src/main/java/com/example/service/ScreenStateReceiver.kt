@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.example.AwayTimeApp
-import com.example.widget.AwayTimeWidgetManager
+import com.example.widget.AwayTimeWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,7 +29,7 @@ class ScreenStateReceiver : BroadcastReceiver() {
                 scope.launch {
                     try {
                         repository.startAwaySession()
-                        AwayTimeWidgetManager.updateAllWidgets(context)
+                        AwayTimeWidgetUpdater.updateAllWidgets(context)
                     } catch (e: Exception) {
                         Log.e(TAG, "Error starting away session on screen off", e)
                     }
@@ -42,7 +42,7 @@ class ScreenStateReceiver : BroadcastReceiver() {
                 scope.launch {
                     try {
                         repository.endAwaySession()
-                        AwayTimeWidgetManager.updateAllWidgets(context)
+                        AwayTimeWidgetUpdater.updateAllWidgets(context)
                     } catch (e: Exception) {
                         Log.e(TAG, "Error ending away session on screen on", e)
                     }
@@ -56,7 +56,7 @@ class ScreenStateReceiver : BroadcastReceiver() {
                     try {
                         // Ensure session is closed if screen on wasn't caught
                         repository.endAwaySession()
-                        AwayTimeWidgetManager.updateAllWidgets(context)
+                        AwayTimeWidgetUpdater.updateAllWidgets(context)
                     } catch (e: Exception) {
                         Log.e(TAG, "Error checking away session on user present", e)
                     }
@@ -69,6 +69,7 @@ class ScreenStateReceiver : BroadcastReceiver() {
                 scope.launch {
                     try {
                         repository.endAwaySession()
+                        AwayTimeWidgetUpdater.updateAllWidgets(context)
                     } catch (e: Exception) {
                         Log.e(TAG, "Error saving session on shutdown", e)
                     }

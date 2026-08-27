@@ -29,6 +29,9 @@ class BootReceiver : BroadcastReceiver() {
                     // Safe recovery of any active session before reboot
                     repository.recoverFromReboot()
 
+                    // Update all widgets after recovery
+                    com.example.widget.AwayTimeWidgetUpdater.updateAllWidgets(context)
+
                     // Check if tracking is enabled in user preferences
                     val userPrefs = preferences.userPreferencesFlow.first()
                     if (userPrefs.backgroundTrackingEnabled) {

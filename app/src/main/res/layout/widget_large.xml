@@ -3,7 +3,7 @@
     android:id="@+id/widget_large_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg_dark"
+    android:background="@drawable/widget_bg_dynamic"
     android:orientation="vertical"
     android:padding="18dp">
 
@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="AWAY TIME"
-            android:textColor="#8E8E93"
+            android:textColor="@color/widget_text_secondary"
             android:textSize="12sp"
             android:textStyle="bold"
             android:letterSpacing="0.12" />
@@ -28,9 +28,19 @@
             android:id="@+id/tv_widget_status_dot"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
             android:text="●"
-            android:textColor="#34C759"
+            android:textColor="@color/widget_accent"
             android:textSize="12sp" />
+
+        <ImageView
+            android:id="@+id/btn_widget_large_refresh"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="@drawable/widget_btn_refresh_bg"
+            android:contentDescription="Refresh Widget"
+            android:padding="5dp"
+            android:src="@drawable/ic_refresh" />
     </LinearLayout>
 
     <!-- Main Active Away Time -->
@@ -40,7 +50,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="0m"
-        android:textColor="#FFFFFF"
+        android:textColor="@color/widget_text_primary"
         android:textSize="32sp"
         android:textStyle="bold" />
 
@@ -49,7 +59,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Phone in use"
-        android:textColor="#A1A1AA"
+        android:textColor="@color/widget_text_secondary"
         android:textSize="13sp" />
 
     <!-- Divider -->
@@ -58,7 +68,7 @@
         android:layout_height="1dp"
         android:layout_marginTop="12dp"
         android:layout_marginBottom="12dp"
-        android:background="#26262E" />
+        android:background="@color/widget_stroke" />
 
     <!-- Metrics Row -->
     <LinearLayout
@@ -76,7 +86,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TODAY"
-                android:textColor="#8E8E93"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08" />
@@ -87,7 +97,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="0m"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -102,7 +112,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="LONGEST"
-                android:textColor="#8E8E93"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08" />
@@ -113,7 +123,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="0m"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -128,7 +138,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="BREAKS"
-                android:textColor="#8E8E93"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08" />
@@ -139,7 +149,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="0"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>

@@ -18,6 +18,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val app = application as AwayTimeApp
+        com.example.widget.AwayTimeWidgetUpdater.updateAllWidgets(this)
 
         setContent {
             val prefs by app.preferencesRepository.userPreferencesFlow.collectAsStateWithLifecycle(
@@ -31,6 +32,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        com.example.widget.AwayTimeWidgetUpdater.updateAllWidgets(this)
     }
 }
 

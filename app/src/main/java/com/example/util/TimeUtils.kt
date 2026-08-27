@@ -13,6 +13,15 @@ object TimeUtils {
     private val dayOfWeekFormat = SimpleDateFormat("EEE", Locale.getDefault())
     private val fullDayFormat = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
 
+    fun getStartOfTodayMillis(): Long {
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        return calendar.timeInMillis
+    }
+
     fun getCurrentDateKey(): String {
         return dateKeyFormat.format(Date())
     }
